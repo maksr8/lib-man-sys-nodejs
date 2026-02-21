@@ -44,6 +44,7 @@ export function saveData(): Promise<void> {
   saveQueue = saveQueue.then(() => fs.writeFile(DATA_FILE, snapshot, "utf-8"))
     .catch((err) => {
       console.error("Error saving to disk:", err);
+      throw err;
     });
 
   return saveQueue;

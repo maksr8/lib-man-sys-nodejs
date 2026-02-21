@@ -2,6 +2,7 @@ import { randomUUID } from "node:crypto";
 import { LOAN_STATUS, type Loan } from "../types/loan.js";
 import type { CreateLoanDto } from "../schemas/loan.schema.js";
 import { store, saveData } from "../storage/store.js";
+import { AppError } from "../utils/AppError.js";
 
 export function getAllLoans(): Loan[] {
   return store.loans;
@@ -13,20 +14,20 @@ export function getLoanById(id: string): Loan | undefined {
 
 export async function createLoan(dto: CreateLoanDto): Promise<Loan> {
   const user = store.users.find((u) => u.id === dto.userId);
-  if (!user) throw new Error("User not found");
+  if (!user) throw new AppError(404, "User not found");
 
   const book = store.books.find((b) => b.id === dto.bookId);
-  if (!book) throw new Error("Book not found");
+  if (!book) throw new AppError(404, "Book not found");
 
   if (!book.available) {
-    throw new Error("Book is not available");
+    throw new AppError(400, "Book is not available");
   }
 
   const hasActiveLoan = store.loans.some(
     (l) => l.bookId === dto.bookId && l.status === LOAN_STATUS.ACTIVE
   );
   if (hasActiveLoan) {
-    throw new Error("Book is already on loan");
+    throw new AppError(400, "Book is already on loan");
   }
 
   const loan: Loan = {
@@ -50,7 +51,7 @@ export async function returnLoan(id: string): Promise<Loan | undefined> {
   if (!loan) return undefined;
 
   if (loan.status === LOAN_STATUS.RETURNED) {
-    throw new Error("Loan is already returned");
+    throw new AppError(400, "Loan is already returned");
   }
 
   loan.status = LOAN_STATUS.RETURNED;

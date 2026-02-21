@@ -3,6 +3,7 @@ import type { Book } from "../types/book.js";
 import type { CreateBookDto, UpdateBookDto } from "../schemas/book.schema.js";
 import { saveData, store } from "../storage/store.js";
 import { LOAN_STATUS } from "../types/loan.js";
+import { AppError } from "../utils/AppError.js";
 
 export function getAllBooks(): Book[] {
   return store.books;
@@ -15,7 +16,7 @@ export function getBookById(id: string): Book | undefined {
 export async function createBook(dto: CreateBookDto): Promise<Book> {
   const existing = store.books.find((b) => b.isbn === dto.isbn);
   if (existing) {
-    throw new Error("Book with this ISBN already exists");
+    throw new AppError(400, "Book with this ISBN already exists");
   }
   const book: Book = {
     id: randomUUID(),
@@ -50,7 +51,7 @@ export async function deleteBook(id: string): Promise<boolean> {
     (l) => l.bookId === id && l.status === LOAN_STATUS.ACTIVE
   );
   if (hasActiveLoan) {
-    throw new Error("Cannot delete a book that is currently on loan");
+    throw new AppError(400, "Cannot delete a book that is currently on loan");
   }
 
   store.books.splice(index, 1);

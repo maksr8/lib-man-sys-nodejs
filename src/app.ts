@@ -1,5 +1,6 @@
 import express, { type Request, type Response } from "express";
 import { routes } from "./routes/index.js";
+import { errorHandler } from "./middleware/errorHandler.js";
 
 export const app = express();
 
@@ -8,3 +9,5 @@ app.get("/", (_req: Request, res: Response) => {
 });
 
 app.use("/api", routes);
+
+app.use(errorHandler);
