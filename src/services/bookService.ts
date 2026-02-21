@@ -2,7 +2,6 @@ import { randomUUID } from "node:crypto";
 import type { Book } from "../types/book.js";
 import type { CreateBookDto, UpdateBookDto } from "../schemas/book.schema.js";
 import { saveData, store } from "../storage/store.js";
-import { LOAN_STATUS } from "../types/loan.js";
 import { AppError } from "../utils/AppError.js";
 
 export function getAllBooks(): Book[] {
@@ -38,7 +37,13 @@ export async function updateBook(id: string, dto: UpdateBookDto): Promise<Book |
   if (dto.title !== undefined) book.title = dto.title;
   if (dto.author !== undefined) book.author = dto.author;
   if (dto.year !== undefined) book.year = dto.year;
-  if (dto.isbn !== undefined) book.isbn = dto.isbn;
+  if (dto.isbn !== undefined && dto.isbn !== book.isbn) {
+    const isIsbnTaken = store.books.some((b) => b.isbn === dto.isbn);
+    if (isIsbnTaken) {
+      throw new AppError(400, "Another book with this ISBN already exists");
+    }
+    book.isbn = dto.isbn;
+  }
 
   await saveData();
   return book;
@@ -47,14 +52,12 @@ export async function updateBook(id: string, dto: UpdateBookDto): Promise<Book |
 export async function deleteBook(id: string): Promise<boolean> {
   const index = store.books.findIndex((b) => b.id === id);
   if (index === -1) return false;
-  const hasActiveLoan = store.loans.some(
-    (l) => l.bookId === id && l.status === LOAN_STATUS.ACTIVE
-  );
-  if (hasActiveLoan) {
-    throw new AppError(400, "Cannot delete a book that is currently on loan");
+  const hasAnyLoan = store.loans.some((l) => l.bookId === id);
+  if (hasAnyLoan) {
+    throw new AppError(400, "Cannot delete a book that has a loan record");
   }
 
   store.books.splice(index, 1);
-  saveData();
+  await saveData();
   return true;
 }
