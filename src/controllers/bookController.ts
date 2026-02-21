@@ -14,12 +14,12 @@ export function getBookById(req: Request<BookParamsDto>, res: Response) {
   res.json({ data: book });
 }
 
-export function createBook(
+export async function createBook(
   req: Request<unknown, unknown, CreateBookDto>,
   res: Response
 ) {
   try {
-    const book = bookService.createBook(req.body);
+    const book = await bookService.createBook(req.body);
     res.status(201).json({ data: book });
   } catch (err) {
     const message = err instanceof Error ? err.message : "Failed to create book";
@@ -27,19 +27,19 @@ export function createBook(
   }
 }
 
-export function updateBook(
+export async function updateBook(
   req: Request<BookParamsDto, unknown, UpdateBookDto>,
   res: Response
 ) {
-  const book = bookService.updateBook(req.params.id, req.body);
+  const book = await bookService.updateBook(req.params.id, req.body);
   if (!book) {
     return res.status(404).json({ error: "Book not found" });
   }
   res.json({ data: book });
 }
 
-export function deleteBook(req: Request<BookParamsDto>, res: Response) {
-  const deleted = bookService.deleteBook(req.params.id);
+export async function deleteBook(req: Request<BookParamsDto>, res: Response) {
+  const deleted = await bookService.deleteBook(req.params.id);
   if (!deleted) {
     return res.status(404).json({ error: "Book not found" });
   }

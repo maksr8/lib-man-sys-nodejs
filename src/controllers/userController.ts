@@ -14,10 +14,15 @@ export function getUserById(req: Request<UserParamsDto>, res: Response) {
   res.json({ data: user });
 }
 
-export function createUser(
+export async function createUser(
   req: Request<unknown, unknown, CreateUserDto>,
   res: Response
 ) {
-  const user = userService.createUser(req.body);
-  res.status(201).json({ data: user });
+  try {
+    const user = await userService.createUser(req.body);
+    res.status(201).json({ data: user });
+  } catch (err) {
+    const message = err instanceof Error ? err.message : "Failed to create user";
+    return res.status(400).json({ error: message });
+  }
 }

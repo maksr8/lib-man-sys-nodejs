@@ -11,7 +11,7 @@ export function getUserById(id: string): User | undefined {
   return store.users.find((u) => u.id === id);
 }
 
-export function createUser(dto: CreateUserDto): User {
+export async function createUser(dto: CreateUserDto): Promise<User> {
   const existingUser = store.users.find((u) => u.email === dto.email);
   if (existingUser) {
     throw new Error("User with this email already exists");
@@ -24,6 +24,6 @@ export function createUser(dto: CreateUserDto): User {
   };
 
   store.users.push(user);
-  saveData();
+  await saveData();
   return user;
 }

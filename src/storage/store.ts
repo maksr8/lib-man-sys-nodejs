@@ -1,6 +1,7 @@
 import { readFileSync, writeFileSync, existsSync } from "node:fs";
 import { join } from "node:path";
 import type { Store } from "../types/store.js";
+import * as fs from "node:fs/promises";
 
 const DATA_FILE = join(process.cwd(), "data.json");
 
@@ -35,6 +36,15 @@ export function loadData(): void {
   }
 }
 
-export function saveData(): void {
-  writeFileSync(DATA_FILE, JSON.stringify(store, null, 2), "utf-8");
+let saveQueue = Promise.resolve();
+
+export function saveData(): Promise<void> {
+  const snapshot = JSON.stringify(store, null, 2);
+
+  saveQueue = saveQueue.then(() => fs.writeFile(DATA_FILE, snapshot, "utf-8"))
+    .catch((err) => {
+      console.error("Error saving to disk:", err);
+    });
+
+  return saveQueue;
 }

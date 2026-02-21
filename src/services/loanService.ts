@@ -11,7 +11,7 @@ export function getLoanById(id: string): Loan | undefined {
   return store.loans.find((l) => l.id === id);
 }
 
-export function createLoan(dto: CreateLoanDto): Loan {
+export async function createLoan(dto: CreateLoanDto): Promise<Loan> {
   const user = store.users.find((u) => u.id === dto.userId);
   if (!user) throw new Error("User not found");
 
@@ -41,11 +41,11 @@ export function createLoan(dto: CreateLoanDto): Loan {
   store.loans.push(loan);
   book.available = false;
 
-  saveData();
+  await saveData();
   return loan;
 }
 
-export function returnLoan(id: string): Loan | undefined {
+export async function returnLoan(id: string): Promise<Loan | undefined> {
   const loan = store.loans.find((l) => l.id === id);
   if (!loan) return undefined;
 
@@ -61,6 +61,6 @@ export function returnLoan(id: string): Loan | undefined {
     book.available = true;
   }
 
-  saveData();
+  await saveData();
   return loan;
 }

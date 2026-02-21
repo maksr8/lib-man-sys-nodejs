@@ -11,7 +11,7 @@ export function getBookById(id: string): Book | undefined {
   return store.books.find((b) => b.id === id);
 }
 
-export function createBook(dto: CreateBookDto): Book {
+export async function createBook(dto: CreateBookDto): Promise<Book> {
   const existing = store.books.find((b) => b.isbn === dto.isbn);
   if (existing) {
     throw new Error("Book with this ISBN already exists");
@@ -25,11 +25,11 @@ export function createBook(dto: CreateBookDto): Book {
     available: true,
   };
   store.books.push(book);
-  saveData();
+  await saveData();
   return book;
 }
 
-export function updateBook(id: string, dto: UpdateBookDto): Book | undefined {
+export async function updateBook(id: string, dto: UpdateBookDto): Promise<Book | undefined> {
   const book = store.books.find((b) => b.id === id);
   if (!book) return undefined;
 
@@ -39,11 +39,11 @@ export function updateBook(id: string, dto: UpdateBookDto): Book | undefined {
   if (dto.isbn !== undefined) book.isbn = dto.isbn;
   if (dto.available !== undefined) book.available = dto.available;
 
-  saveData();
+  await saveData();
   return book;
 }
 
-export function deleteBook(id: string): boolean {
+export async function deleteBook(id: string): Promise<boolean> {
   const index = store.books.findIndex((b) => b.id === id);
   if (index === -1) return false;
 
