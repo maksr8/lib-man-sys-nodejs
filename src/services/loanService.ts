@@ -20,14 +20,14 @@ export async function createLoan(dto: CreateLoanDto): Promise<Loan> {
   if (!book) throw new AppError(404, "Book not found");
 
   if (!book.available) {
-    throw new AppError(400, "Book is not available");
+    throw new AppError(409, "Book is not available");
   }
 
   const hasActiveLoan = store.loans.some(
     (l) => l.bookId === dto.bookId && l.status === LOAN_STATUS.ACTIVE
   );
   if (hasActiveLoan) {
-    throw new AppError(400, "Book is already on loan");
+    throw new AppError(409, "Book is already on loan");
   }
 
   const loan: Loan = {
@@ -51,7 +51,7 @@ export async function returnLoan(id: string): Promise<Loan | undefined> {
   if (!loan) return undefined;
 
   if (loan.status === LOAN_STATUS.RETURNED) {
-    throw new AppError(400, "Loan is already returned");
+    throw new AppError(409, "Loan is already returned");
   }
 
   loan.status = LOAN_STATUS.RETURNED;

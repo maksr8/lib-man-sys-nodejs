@@ -15,7 +15,7 @@ export function getBookById(id: string): Book | undefined {
 export async function createBook(dto: CreateBookDto): Promise<Book> {
   const existing = store.books.find((b) => b.isbn === dto.isbn);
   if (existing) {
-    throw new AppError(400, "Book with this ISBN already exists");
+    throw new AppError(409, "Book with this ISBN already exists");
   }
   const book: Book = {
     id: randomUUID(),
@@ -40,7 +40,7 @@ export async function updateBook(id: string, dto: UpdateBookDto): Promise<Book |
   if (dto.isbn !== undefined && dto.isbn !== book.isbn) {
     const isIsbnTaken = store.books.some((b) => b.isbn === dto.isbn);
     if (isIsbnTaken) {
-      throw new AppError(400, "Another book with this ISBN already exists");
+      throw new AppError(409, "Another book with this ISBN already exists");
     }
     book.isbn = dto.isbn;
   }
@@ -54,7 +54,7 @@ export async function deleteBook(id: string): Promise<boolean> {
   if (index === -1) return false;
   const hasAnyLoan = store.loans.some((l) => l.bookId === id);
   if (hasAnyLoan) {
-    throw new AppError(400, "Cannot delete a book that has a loan record");
+    throw new AppError(409, "Cannot delete a book that has a loan record");
   }
 
   store.books.splice(index, 1);

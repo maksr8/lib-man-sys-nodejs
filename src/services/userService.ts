@@ -15,7 +15,7 @@ export function getUserById(id: string): User | undefined {
 export async function createUser(dto: CreateUserDto): Promise<User> {
   const existingUser = store.users.find((u) => u.email === dto.email);
   if (existingUser) {
-    throw new AppError(400, "User with this email already exists");
+    throw new AppError(409, "User with this email already exists");
   }
 
   const user: User = {
