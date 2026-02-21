@@ -25,7 +25,6 @@ export const updateBookSchema = z.object({
     })
     .optional(),
   isbn: z.string().min(1).optional(),
-  available: z.boolean().optional(),
 });
 
 export const BookParamsSchema = z.object({

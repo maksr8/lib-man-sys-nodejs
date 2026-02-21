@@ -2,6 +2,7 @@ import { randomUUID } from "node:crypto";
 import type { Book } from "../types/book.js";
 import type { CreateBookDto, UpdateBookDto } from "../schemas/book.schema.js";
 import { saveData, store } from "../storage/store.js";
+import { LOAN_STATUS } from "../types/loan.js";
 
 export function getAllBooks(): Book[] {
   return store.books;
@@ -37,7 +38,6 @@ export async function updateBook(id: string, dto: UpdateBookDto): Promise<Book |
   if (dto.author !== undefined) book.author = dto.author;
   if (dto.year !== undefined) book.year = dto.year;
   if (dto.isbn !== undefined) book.isbn = dto.isbn;
-  if (dto.available !== undefined) book.available = dto.available;
 
   await saveData();
   return book;
@@ -46,6 +46,12 @@ export async function updateBook(id: string, dto: UpdateBookDto): Promise<Book |
 export async function deleteBook(id: string): Promise<boolean> {
   const index = store.books.findIndex((b) => b.id === id);
   if (index === -1) return false;
+  const hasActiveLoan = store.loans.some(
+    (l) => l.bookId === id && l.status === LOAN_STATUS.ACTIVE
+  );
+  if (hasActiveLoan) {
+    throw new Error("Cannot delete a book that is currently on loan");
+  }
 
   store.books.splice(index, 1);
   saveData();
