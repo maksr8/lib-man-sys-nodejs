@@ -1,0 +1,29 @@
+import { randomUUID } from "node:crypto";
+import type { User } from "../types/user.js";
+import type { CreateUserDto } from "../schemas/user.schema.js";
+import { saveData, store } from "../storage/store.js";
+
+export function getAllUsers(): User[] {
+  return store.users;
+}
+
+export function getUserById(id: string): User | undefined {
+  return store.users.find((u) => u.id === id);
+}
+
+export function createUser(dto: CreateUserDto): User {
+  const existingUser = store.users.find((u) => u.email === dto.email);
+  if (existingUser) {
+    throw new Error("User with this email already exists");
+  }
+
+  const user: User = {
+    id: randomUUID(),
+    name: dto.name,
+    email: dto.email,
+  };
+
+  store.users.push(user);
+  saveData();
+  return user;
+}
