@@ -1,15 +1,14 @@
 import type { Request, Response } from "express";
 import type { BookParamsDto, CreateBookDto, UpdateBookDto } from "../schemas/book.schema.js";
 import * as bookService from "../services/bookService.js";
-import { AppError } from "../utils/AppError.js";
 
-export function getBooks(_req: Request, res: Response) {
-  res.json({ data: bookService.getAllBooks() });
+export async function getBooks(_req: Request, res: Response) {
+  const books = await bookService.getAllBooks();
+  res.json({ data: books });
 }
 
-export function getBookById(req: Request<BookParamsDto>, res: Response) {
-  const book = bookService.getBookById(req.params.id);
-  if (!book) throw new AppError(404, "Book not found");
+export async function getBookById(req: Request<BookParamsDto>, res: Response) {
+  const book = await bookService.getBookById(req.params.id);
   res.json({ data: book });
 }
 
@@ -26,12 +25,10 @@ export async function updateBook(
   res: Response
 ) {
   const book = await bookService.updateBook(req.params.id, req.body);
-  if (!book) throw new AppError(404, "Book not found");
   res.json({ data: book });
 }
 
 export async function deleteBook(req: Request<BookParamsDto>, res: Response) {
-  const deleted = await bookService.deleteBook(req.params.id);
-  if (!deleted) throw new AppError(404, "Book not found");
+  await bookService.deleteBook(req.params.id);
   res.status(204).end();
 }

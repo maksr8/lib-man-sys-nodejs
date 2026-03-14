@@ -1,30 +1,34 @@
-import { randomUUID } from "node:crypto";
-import type { User } from "../types/user.js";
+import { Prisma, type User } from "../generated/prisma/client.js";
 import type { CreateUserDto } from "../schemas/user.schema.js";
-import { saveData, store } from "../storage/store.js";
 import { AppError } from "../utils/AppError.js";
+import { prisma } from "../db/prisma.js";
 
-export function getAllUsers(): User[] {
-  return store.users;
+export async function getAllUsers(): Promise<User[]> {
+  return await prisma.user.findMany();
 }
 
-export function getUserById(id: string): User | undefined {
-  return store.users.find((u) => u.id === id);
+export async function getUserById(id: string): Promise<User> {
+  const user = await prisma.user.findUnique({
+    where: { id }
+  });
+  if (!user) throw new AppError(404, "User not found");
+  return user;
 }
 
 export async function createUser(dto: CreateUserDto): Promise<User> {
-  const existingUser = store.users.find((u) => u.email === dto.email);
-  if (existingUser) {
-    throw new AppError(409, "User with this email already exists");
+  try {
+    const user = await prisma.user.create({
+      data: {
+        ...dto
+      }
+    });
+    return user;
+  } catch (error: unknown) {
+    if (error instanceof Prisma.PrismaClientKnownRequestError) {
+      if (error.code === "P2002") {
+        throw new AppError(409, "User with this email already exists");
+      }
+    }
+    throw error;
   }
-
-  const user: User = {
-    id: randomUUID(),
-    name: dto.name,
-    email: dto.email,
-  };
-
-  store.users.push(user);
-  await saveData();
-  return user;
 }

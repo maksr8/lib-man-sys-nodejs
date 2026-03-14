@@ -1,63 +1,85 @@
-import { randomUUID } from "node:crypto";
-import type { Book } from "../types/book.js";
+import { prisma } from "../db/prisma.js";
+import { Prisma, type Book } from "../generated/prisma/client.js";
 import type { CreateBookDto, UpdateBookDto } from "../schemas/book.schema.js";
-import { saveData, store } from "../storage/store.js";
 import { AppError } from "../utils/AppError.js";
 
-export function getAllBooks(): Book[] {
-  return store.books;
+export async function getAllBooks(): Promise<Book[]> {
+  return await prisma.book.findMany();
 }
 
-export function getBookById(id: string): Book | undefined {
-  return store.books.find((b) => b.id === id);
+export async function getBookById(id: string): Promise<Book> {
+  const book = await prisma.book.findUnique({
+    where: { id }
+  });
+
+  if (!book) throw new AppError(404, "Book not found");
+
+  return book;
 }
 
 export async function createBook(dto: CreateBookDto): Promise<Book> {
-  const existing = store.books.find((b) => b.isbn === dto.isbn);
-  if (existing) {
-    throw new AppError(409, "Book with this ISBN already exists");
-  }
-  const book: Book = {
-    id: randomUUID(),
-    title: dto.title,
-    author: dto.author,
-    year: dto.year,
-    isbn: dto.isbn,
-    available: true,
-  };
-  store.books.push(book);
-  await saveData();
-  return book;
-}
-
-export async function updateBook(id: string, dto: UpdateBookDto): Promise<Book | undefined> {
-  const book = store.books.find((b) => b.id === id);
-  if (!book) return undefined;
-
-  if (dto.title !== undefined) book.title = dto.title;
-  if (dto.author !== undefined) book.author = dto.author;
-  if (dto.year !== undefined) book.year = dto.year;
-  if (dto.isbn !== undefined && dto.isbn !== book.isbn) {
-    const isIsbnTaken = store.books.some((b) => b.isbn === dto.isbn);
-    if (isIsbnTaken) {
-      throw new AppError(409, "Another book with this ISBN already exists");
+  try {
+    return await prisma.book.create({
+      data: {
+        ...dto,
+        available: true
+      },
+    });
+  } catch (error: unknown) {
+    if (error instanceof Prisma.PrismaClientKnownRequestError) {
+      if (error.code === 'P2002') {
+        throw new AppError(409, "Book with this ISBN already exists");
+      }
     }
-    book.isbn = dto.isbn;
+    throw error;
   }
-
-  await saveData();
-  return book;
 }
 
-export async function deleteBook(id: string): Promise<boolean> {
-  const index = store.books.findIndex((b) => b.id === id);
-  if (index === -1) return false;
-  const hasAnyLoan = store.loans.some((l) => l.bookId === id);
-  if (hasAnyLoan) {
-    throw new AppError(409, "Cannot delete a book that has a loan record");
+export async function updateBook(id: string, dto: UpdateBookDto): Promise<Book> {
+  const updateData: Prisma.BookUpdateInput = {};
+  if (dto.title !== undefined) updateData.title = dto.title;
+  if (dto.author !== undefined) updateData.author = dto.author;
+  if (dto.year !== undefined) updateData.year = dto.year;
+  if (dto.isbn !== undefined) updateData.isbn = dto.isbn;
+
+  try {
+    return await prisma.book.update({
+      where: { id },
+      data: updateData,
+    });
+  } catch (error: unknown) {
+    if (error instanceof Prisma.PrismaClientKnownRequestError) {
+      if (error.code === 'P2025') {
+        throw new AppError(404, "Book not found");
+      }
+      if (error.code === 'P2002') {
+        throw new AppError(409, "Another book with this ISBN already exists");
+      }
+    }
+    throw error;
+  }
+}
+
+export async function deleteBook(id: string): Promise<void> {
+  const hasLoan = await prisma.loan.findFirst({
+    where: { bookId: id },
+    select: { id: true }
+  });
+
+  if (hasLoan) {
+    throw new AppError(409, "Cannot delete a book that has a loan history");
   }
 
-  store.books.splice(index, 1);
-  await saveData();
-  return true;
+  try {
+    await prisma.book.delete({
+      where: { id },
+    });
+  } catch (error: unknown) {
+    if (error instanceof Prisma.PrismaClientKnownRequestError) {
+      if (error.code === 'P2025') {
+        throw new AppError(404, "Book not found");
+      }
+    }
+    throw error;
+  }
 }

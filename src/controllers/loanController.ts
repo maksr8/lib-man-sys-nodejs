@@ -1,10 +1,10 @@
 import type { Request, Response } from "express";
 import type { CreateLoanDto, LoanParamsDto } from "../schemas/loan.schema.js";
 import * as loanService from "../services/loanService.js";
-import { AppError } from "../utils/AppError.js";
 
-export function getLoans(_req: Request, res: Response) {
-  res.json({ data: loanService.getAllLoans() });
+export async function getLoans(_req: Request, res: Response) {
+  const loans = await loanService.getAllLoans();
+  res.json({ data: loans });
 }
 
 export async function createLoan(
@@ -17,6 +17,5 @@ export async function createLoan(
 
 export async function returnLoan(req: Request<LoanParamsDto>, res: Response) {
   const loan = await loanService.returnLoan(req.params.id);
-  if (!loan) throw new AppError(404, "Loan not found");
   res.json({ data: loan });
 }
