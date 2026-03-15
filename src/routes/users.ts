@@ -1,11 +1,26 @@
-import express from "express";
+import express, { type NextFunction } from "express";
 import * as userController from "../controllers/userController.js";
-import { jsonParser } from "../middleware/jsonParser.js";
 import { validate } from "../middleware/validate.js";
-import { createUserSchema, UserParamsSchema } from "../schemas/user.schema.js";
+import { UserParamsSchema } from "../schemas/user.schema.js";
+import { requireAuth } from "../middleware/auth.js";
+import { requireRole } from "../middleware/role.js";
+import { UserRole } from "../generated/prisma/enums.js";
 
 export const usersRouter = express.Router();
 
-usersRouter.get("/", userController.getUsers);
-usersRouter.get("/:id", validate(UserParamsSchema, "params"), userController.getUserById);
-usersRouter.post("/", jsonParser, validate(createUserSchema), userController.createUser);
+usersRouter.get(
+  "/",
+  requireAuth,
+  requireRole([UserRole.ADMIN]),
+  userController.getUsers,
+);
+
+usersRouter.get("/me", requireAuth, userController.getCurrentUser);
+
+usersRouter.get(
+  "/:id",
+  requireAuth,
+  requireRole([UserRole.ADMIN]),
+  validate(UserParamsSchema, "params"),
+  userController.getUserById,
+);

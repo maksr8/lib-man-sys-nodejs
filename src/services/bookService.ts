@@ -9,7 +9,7 @@ export async function getAllBooks(): Promise<Book[]> {
 
 export async function getBookById(id: string): Promise<Book> {
   const book = await prisma.book.findUnique({
-    where: { id }
+    where: { id },
   });
 
   if (!book) throw new AppError(404, "Book not found");
@@ -22,12 +22,12 @@ export async function createBook(dto: CreateBookDto): Promise<Book> {
     return await prisma.book.create({
       data: {
         ...dto,
-        available: true
+        available: true,
       },
     });
   } catch (error: unknown) {
     if (error instanceof Prisma.PrismaClientKnownRequestError) {
-      if (error.code === 'P2002') {
+      if (error.code === "P2002") {
         throw new AppError(409, "Book with this ISBN already exists");
       }
     }
@@ -35,7 +35,10 @@ export async function createBook(dto: CreateBookDto): Promise<Book> {
   }
 }
 
-export async function updateBook(id: string, dto: UpdateBookDto): Promise<Book> {
+export async function updateBook(
+  id: string,
+  dto: UpdateBookDto,
+): Promise<Book> {
   const updateData: Prisma.BookUpdateInput = {};
   if (dto.title !== undefined) updateData.title = dto.title;
   if (dto.author !== undefined) updateData.author = dto.author;
@@ -49,10 +52,10 @@ export async function updateBook(id: string, dto: UpdateBookDto): Promise<Book> 
     });
   } catch (error: unknown) {
     if (error instanceof Prisma.PrismaClientKnownRequestError) {
-      if (error.code === 'P2025') {
+      if (error.code === "P2025") {
         throw new AppError(404, "Book not found");
       }
-      if (error.code === 'P2002') {
+      if (error.code === "P2002") {
         throw new AppError(409, "Another book with this ISBN already exists");
       }
     }
@@ -63,7 +66,7 @@ export async function updateBook(id: string, dto: UpdateBookDto): Promise<Book> 
 export async function deleteBook(id: string): Promise<void> {
   const hasLoan = await prisma.loan.findFirst({
     where: { bookId: id },
-    select: { id: true }
+    select: { id: true },
   });
 
   if (hasLoan) {
@@ -76,7 +79,7 @@ export async function deleteBook(id: string): Promise<void> {
     });
   } catch (error: unknown) {
     if (error instanceof Prisma.PrismaClientKnownRequestError) {
-      if (error.code === 'P2025') {
+      if (error.code === "P2025") {
         throw new AppError(404, "Book not found");
       }
     }

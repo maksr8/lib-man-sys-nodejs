@@ -1,5 +1,5 @@
 import type { Request, Response } from "express";
-import type { CreateUserDto, UserParamsDto } from "../schemas/user.schema.js";
+import type { UserParamsDto } from "../schemas/user.schema.js";
 import * as userService from "../services/userService.js";
 
 export async function getUsers(_req: Request, res: Response) {
@@ -12,10 +12,8 @@ export async function getUserById(req: Request<UserParamsDto>, res: Response) {
   res.json({ data: user });
 }
 
-export async function createUser(
-  req: Request<unknown, unknown, CreateUserDto>,
-  res: Response
-) {
-  const user = await userService.createUser(req.body);
-  res.status(201).json({ data: user });
+export async function getCurrentUser(req: Request, res: Response) {
+  const currentUserId = req.user!.userId;
+  const user = await userService.getUserById(currentUserId);
+  res.json({ data: user });
 }

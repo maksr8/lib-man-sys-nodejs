@@ -28,7 +28,7 @@ export const updateBookSchema = z.object({
 });
 
 export const BookParamsSchema = z.object({
-  id: z.uuid("Invalid ID format")
+  id: z.uuid("Invalid ID format"),
 });
 
 export type CreateBookDto = z.infer<typeof createBookSchema>;
