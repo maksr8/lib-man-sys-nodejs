@@ -1,5 +1,10 @@
 import type { Request, Response } from "express";
-import type { LoginDto, RegisterDto } from "../schemas/auth.schema.js";
+import type {
+  LoginDto,
+  RegisterDto,
+  RequestPasswordResetDto,
+  ResetPasswordDto,
+} from "../schemas/auth.schema.js";
 import * as authService from "../services/authService.js";
 
 const REFRESH_TOKEN_DAYS = parseInt(process.env.REFRESH_TOKEN_EXPIRES_DAYS!);
@@ -45,4 +50,21 @@ export async function refresh(req: Request, res: Response) {
   res.cookie("refreshToken", refreshToken, cookieOptions);
 
   res.json({ data: { accessToken } });
+}
+
+export async function requestPasswordReset(
+  req: Request<unknown, unknown, RequestPasswordResetDto>,
+  res: Response,
+) {
+  await authService.requestPasswordReset(req.body.email);
+  res.json({ message: "Message sent successfully" });
+}
+
+export async function resetPassword(
+  req: Request<unknown, unknown, ResetPasswordDto>,
+  res: Response,
+) {
+  const { newPassword, token } = req.body;
+  await authService.resetPassword(newPassword, token);
+  res.json({ message: "Password reset successfully" });
 }
