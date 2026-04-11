@@ -23,13 +23,14 @@ model Book {
 }
 
 model User {
-  id       String   @id @default(uuid())
-  name     String
-  email    String   @unique
-  role     UserRole @default(USER)
-  password String
-  loans    Loan[]
-  sessions Session[]
+  id        String    @id @default(uuid())
+  name      String
+  email     String    @unique
+  role      UserRole  @default(USER)
+  password  String
+  avatarURL String?
+  loans     Loan[]
+  sessions  Session[]
 }
 
 enum UserRole {
