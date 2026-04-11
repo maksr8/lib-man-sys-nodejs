@@ -1,7 +1,7 @@
 import type { Request, Response, NextFunction } from "express";
 import jwt from "jsonwebtoken";
 import { AppError } from "../utils/AppError.js";
-import type { JWTPayload } from "../types/jwtPayload.js";
+import type { AccessJwtPayload } from "../types/auth.js";
 
 const JWT_SECRET = process.env.JWT_SECRET!;
 
@@ -14,7 +14,7 @@ export function requireAuth(req: Request, _res: Response, next: NextFunction) {
   const token = authHeader.slice(7);
 
   try {
-    const payload = jwt.verify(token, JWT_SECRET) as JWTPayload;
+    const payload = jwt.verify(token, JWT_SECRET) as AccessJwtPayload;
 
     req.user = payload;
 

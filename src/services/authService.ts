@@ -7,18 +7,22 @@ import { AppError } from "../utils/AppError.js";
 import type { LoginDto, RegisterDto } from "../schemas/auth.schema.js";
 import type { StringValue } from "ms";
 import type { SafeUser } from "../types/safeUser.js";
+import { sendEmail } from "../utils/sendEmail.js";
+import type { ResetPasswordJwtPayload } from "../types/auth.js";
+import { hashPassword } from "../utils/hashPassword.js";
 
 const JWT_SECRET = process.env.JWT_SECRET!;
 const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN!;
-const SALT_ROUNDS = parseInt(process.env.PASSWORD_SALT_ROUNDS!);
 const REFRESH_TOKEN_EXPIRES_DAYS = parseInt(
   process.env.REFRESH_TOKEN_EXPIRES_DAYS!,
 );
+const RESET_PASSWORD_TOKEN_EXPIRES_IN =
+  process.env.RESET_PASSWORD_TOKEN_EXPIRES_IN!;
 
 export async function register(
   dto: RegisterDto,
 ): Promise<{ accessToken: string; refreshToken: string; user: SafeUser }> {
-  const hashedPassword = await bcrypt.hash(dto.password, SALT_ROUNDS);
+  const hashedPassword = await hashPassword(dto.password);
   try {
     const user = await prisma.user.create({
       data: {
@@ -126,4 +130,47 @@ async function generateAuthSession(
   });
 
   return { accessToken, refreshToken };
+}
+
+export async function requestPasswordReset(email: string): Promise<void> {
+  const user = await prisma.user.findUnique({ where: { email } });
+  if (!user) {
+    return;
+  }
+
+  const token = jwt.sign({ email }, JWT_SECRET, {
+    expiresIn: RESET_PASSWORD_TOKEN_EXPIRES_IN as StringValue,
+  });
+
+  await sendEmail({
+    to: email,
+    subject: "Password Reset Request",
+    text: `To reset your password, please click the following link: http://localhost:3000/reset-password?token=${token}`,
+    html: `<p>To reset your password, please click the following link:</p><p><a href="http://localhost:3000/reset-password?token=${token}">Reset Password</a></p>`,
+  });
+}
+
+export async function resetPassword(newPassword: string, token: string) {
+  let email = undefined;
+  try {
+    const payload = jwt.verify(token, JWT_SECRET) as ResetPasswordJwtPayload;
+    email = payload.email;
+  } catch (error) {
+    if (error instanceof jwt.TokenExpiredError) {
+      throw new AppError(401, "Reset password token is expired");
+    }
+    if (error instanceof jwt.JsonWebTokenError) {
+      throw new AppError(401, "Reset password token is invalid");
+    }
+  }
+
+  try {
+    const hashedPassword = await hashPassword(newPassword);
+    await prisma.user.update({
+      where: { email: email! },
+      data: { password: hashedPassword },
+    });
+  } catch (error) {
+    console.error("Error resetting password:", error);
+  }
 }
